@@ -33,5 +33,22 @@ export async function signIn(req,res){
 }
 
 export async function getMe(req,res){
-    res.send("GetMe")
+    const userId = res.locals.sessao.userId
+    try {
+        const user = (await db.query(`SELECT * FROM users WHERE id=$1`,[userId])).rows[0]
+        const userUrls = await db.query(`SELECT id, "shortUrl", url, "visitCount" FROM urls WHERE owner=$1`,[userId])
+        let visitCount = 0
+        for(let i = 0 ; i < userUrls.rowCount ; i++){
+            visitCount+= userUrls.rows[i].visitCount
+        }
+        const resObj = {
+            id:userId,
+            name: user.name,
+            visitCount,
+            shortenedUrls: userUrls.rows
+        }
+        res.send(resObj)
+    } catch (err) {
+        res.status(500).send(err.message)       
+    }
 }

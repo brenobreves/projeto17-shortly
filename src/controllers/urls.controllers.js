@@ -22,7 +22,7 @@ export async function postUrl(req,res){
 export async function getUrlById(req,res){
     const {id} = req.params
     try {
-        const urlQuery = await db.query(`SELECT id,"shortUrl",url FROM urls WHERE id=$1`,[Number(id)])
+        const urlQuery = await db.query(`SELECT id,"shortUrl",url FROM urls WHERE id=$1;`,[Number(id)])
         if(urlQuery.rowCount === 0 ) return res.sendStatus(404)
         const resObj = urlQuery.rows[0]
         res.send(resObj)
@@ -36,5 +36,15 @@ export async function openUrl(req,res){
 }
 
 export async function deleteUrl(req,res){
-    res.send("DeleteUrl")
+    const urlId = req.params.id
+    const reqId = res.locals.sessao.userId
+    try {
+        const urlQuery = await db.query(`SELECT * FROM urls WHERE id=$1;`,[Number(urlId)])
+        if(urlQuery.rowCount === 0) return res.sendStatus(404)
+        if(urlQuery.rows[0].owner !== reqId) return res.sendStatus(401)
+        const deleteUrl = await db.query(`DELETE FROM urls WHERE id=$1;`,[urlId])
+        res.sendStatus(204)
+    } catch (err) {
+        res.status(500).send(err.message)        
+    }
 }
